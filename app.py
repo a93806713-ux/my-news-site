@@ -97,4 +97,5 @@ if __name__ == "__main__":
     t = threading.Thread(target=start_scheduler, daemon=True)
     t.start()
 
-    app.run(debug=False)  # 스케줄러 때문에 debug=False
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
