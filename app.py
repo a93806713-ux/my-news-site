@@ -1,9 +1,6 @@
 from flask import Flask, render_template
 import sqlite3
 import os
-import threading
-import schedule
-import time
 
 app = Flask(__name__)
 
@@ -44,45 +41,7 @@ def get_articles():
         })
     return articles
 
-def run_crawler():
-    import feedparser
-    from datetime import datetime
-    print("크롤링 시작...")
-    RSS_FEEDS = [
-        {"url": "https://www.hankyung.com/feed/economy", "source": "한국경제", "category": "경제"},
-        {"url": "https://www.hankyung.com/feed/stock",   "source": "한국경제", "category": "주식"},
-    ]
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    count = 0
-    for feed_info in RSS_FEEDS:
-        feed = feedparser.parse(feed_info["url"])
-        for entry in feed.entries[:10]:
-            title = entry.get("title", "제목없음")
-            link  = entry.get("link", "#")
-            date  = entry.get("published", datetime.now().strftime("%Y-%m-%d"))[:10]
-            c.execute("SELECT id FROM articles WHERE link = ?", (link,))
-            if c.fetchone() is None:
-                c.execute(
-                    "INSERT INTO articles (title, link, source, category, date) VALUES (?,?,?,?,?)",
-                    (title, link, feed_info["source"], feed_info["category"], date)
-                )
-                count += 1
-    conn.commit()
-    conn.close()
-    print(f"크롤링 완료 - 새 기사 {count}개 추가")
-
-def start_scheduler():
-    schedule.every(30).minutes.do(run_crawler)
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
-
-# gunicorn 실행 시 자동 초기화 (이 부분이 핵심!)
 init_db()
-run_crawler()
-t = threading.Thread(target=start_scheduler, daemon=True)
-t.start()
 
 @app.route("/")
 def index():
