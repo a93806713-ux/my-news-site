@@ -45,16 +45,13 @@ def get_articles():
     return articles
 
 def run_crawler():
-    """크롤러 자동 실행"""
-    print("자동 크롤링 시작...")
     import feedparser
     from datetime import datetime
-
+    print("크롤링 시작...")
     RSS_FEEDS = [
         {"url": "https://www.hankyung.com/feed/economy", "source": "한국경제", "category": "경제"},
         {"url": "https://www.hankyung.com/feed/stock",   "source": "한국경제", "category": "주식"},
     ]
-
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     count = 0
@@ -73,14 +70,19 @@ def run_crawler():
                 count += 1
     conn.commit()
     conn.close()
-    print(f"자동 크롤링 완료 - 새 기사 {count}개 추가")
+    print(f"크롤링 완료 - 새 기사 {count}개 추가")
 
 def start_scheduler():
-    """백그라운드 스케줄러 실행"""
-    schedule.every(30).minutes.do(run_crawler)  # 30분마다 실행
+    schedule.every(30).minutes.do(run_crawler)
     while True:
         schedule.run_pending()
         time.sleep(60)
+
+# gunicorn 실행 시 자동 초기화 (이 부분이 핵심!)
+init_db()
+run_crawler()
+t = threading.Thread(target=start_scheduler, daemon=True)
+t.start()
 
 @app.route("/")
 def index():
@@ -88,14 +90,5 @@ def index():
     return render_template("index.html", articles=articles)
 
 if __name__ == "__main__":
-    init_db()
-
-    # 서버 시작할 때 크롤러 1회 즉시 실행
-    run_crawler()
-
-    # 백그라운드에서 스케줄러 실행
-    t = threading.Thread(target=start_scheduler, daemon=True)
-    t.start()
-
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)
