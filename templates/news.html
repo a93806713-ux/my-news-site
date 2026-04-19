@@ -12,8 +12,13 @@
     nav { background: #16213e; display: flex; justify-content: center; gap: 4px; padding: 8px; flex-wrap: wrap; }
     nav a { color: #ccd; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
     nav a:hover, nav a.active { background: #4a6cf7; color: white; }
-    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
     h2 { font-size: 20px; margin-bottom: 20px; color: #1a1a2e; }
+    .search-bar { display: flex; margin-bottom: 16px; gap: 8px; }
+    .search-bar input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; outline: none; }
+    .search-bar input:focus { border-color: #1a1a2e; }
+    .search-bar button { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    .result-count { font-size: 13px; color: #888; margin-bottom: 12px; }
     .article-card { background: white; border-radius: 12px; padding: 18px 22px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: transform 0.15s; }
     .article-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     .article-card h3 { font-size: 16px; margin-bottom: 8px; line-height: 1.5; }
@@ -27,30 +32,60 @@
   </style>
 </head>
 <body>
-<header>
-  <h1>📒 오늘의 경제 노트</h1>
-</header>
+<header><h1>📒 오늘의 경제 노트</h1></header>
 <nav>
   <a href="/">홈</a>
   <a href="/news/경제" class="{{ 'active' if category == '경제' }}">경제</a>
   <a href="/news/주식" class="{{ 'active' if category == '주식' }}">주식</a>
   <a href="/news/부동산" class="{{ 'active' if category == '부동산' }}">부동산</a>
+  <a href="/realestate">부동산 현황</a>
   <a href="/stock">주가 검색</a>
   <a href="/feedback">개선 요청</a>
 </nav>
 <div class="container">
-  <h2>{{ category }} 뉴스 최신 20개</h2>
-  {% for article in articles %}
-  <div class="article-card">
-    <h3><a href="{{ article['link'] }}" target="_blank" rel="noreferrer">{{ article['title'] }}</a></h3>
-    <div class="meta">
-      <span class="badge {{ article['category'] }}">{{ article['category'] }}</span>
-      <span>{{ article['source'] }}</span>
-      <span>·</span>
-      <span>{{ article['date'] }}</span>
-    </div>
+  <h2>{{ category }} 최신 뉴스 20개</h2>
+
+  <!-- 검색창 -->
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="{{ category }} 기사 검색...">
+    <button onclick="applyFilter()">검색</button>
   </div>
-  {% endfor %}
+  <div class="result-count" id="resultCount"></div>
+
+  <div id="articleList">
+    {% for article in articles %}
+    <div class="article-card">
+      <h3><a href="{{ article['link'] }}" target="_blank" rel="noreferrer">{{ article['title'] }}</a></h3>
+      <div class="meta">
+        <span class="badge {{ article['category'] }}">{{ article['category'] }}</span>
+        <span>{{ article['source'] }}</span>
+        <span>·</span>
+        <span>{{ article['date'] }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
 </div>
+
+<script>
+function applyFilter() {
+  const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+  const cards   = document.querySelectorAll('.article-card');
+  let count = 0;
+  cards.forEach(card => {
+    const title   = card.querySelector('h3').textContent.toLowerCase();
+    const visible = keyword === '' || title.includes(keyword);
+    card.style.display = visible ? 'block' : 'none';
+    if (visible) count++;
+  });
+  document.getElementById('resultCount').textContent = `기사 ${count}개`;
+}
+
+document.getElementById('searchInput').addEventListener('keyup', e => {
+  if (e.key === 'Enter') applyFilter();
+});
+
+applyFilter();
+</script>
 </body>
 </html>

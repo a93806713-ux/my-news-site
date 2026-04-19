@@ -2,11 +2,27 @@ from flask import Flask, render_template, request, jsonify
 import sqlite3
 import os
 import yfinance as yf
+import anthropic
+import threading
+import schedule
+import time
+from datetime import datetime, timedelta
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE_DIR, "news.db")
+
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+
+# 보안 - Rate Limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["300 per day", "60 per hour"]
+)
 
 def init_db():
     conn = sqlite3.connect(DB)
@@ -30,6 +46,14 @@ def init_db():
             date      TEXT
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS summaries (
+            id       INTEGER PRIMARY KEY AUTOINCREMENT,
+            type     TEXT,
+            content  TEXT,
+            date     TEXT
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -37,17 +61,113 @@ def get_articles(category=None):
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     if category:
-        c.execute("SELECT id, title, link, source, category, date FROM articles WHERE category=? ORDER BY date DESC LIMIT 20", (category,))
+        c.execute("""
+            SELECT id, title, link, source, category, date
+            FROM articles WHERE category=?
+            ORDER BY date DESC LIMIT 20
+        """, (category,))
     else:
-        c.execute("SELECT id, title, link, source, category, date FROM articles ORDER BY date DESC LIMIT 20")
+        c.execute("""
+            SELECT id, title, link, source, category, date FROM (
+                SELECT *, ROW_NUMBER() OVER (PARTITION BY category ORDER BY date DESC) rn
+                FROM articles WHERE category IN ('경제','주식','부동산')
+            ) WHERE rn <= 20
+            ORDER BY date DESC
+        """)
     rows = c.fetchall()
     conn.close()
     return [{"id": r[0], "title": r[1], "link": r[2], "source": r[3], "category": r[4], "date": r[5]} for r in rows]
 
+def get_summary(summary_type):
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT content, date FROM summaries WHERE type=? ORDER BY id DESC LIMIT 1", (summary_type,))
+    row = c.fetchone()
+    conn.close()
+    return row if row else None
+
+def generate_summary(summary_type):
+    if not ANTHROPIC_API_KEY:
+        return "API 키가 설정되지 않았습니다."
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if summary_type == "today":
+        c.execute("SELECT title FROM articles ORDER BY id DESC LIMIT 30")
+        period = "오늘"
+    else:
+        c.execute("SELECT title FROM articles ORDER BY id DESC LIMIT 80")
+        period = "저번주"
+
+    titles = [row[0] for row in c.fetchall()]
+    conn.close()
+
+    if summary_type == "week":
+        titles = titles[30:]
+
+    if not titles:
+        return f"{period} 기사가 없습니다."
+
+    titles_text = "\n".join([f"- {t}" for t in titles])
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    message = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=500,
+        messages=[{
+            "role": "user",
+            "content": f"""다음은 {period} 주요 경제/주식/부동산 기사 제목들입니다.
+이 기사들을 바탕으로 {period}의 주요 경제 동향을 3~5줄로 간결하게 요약해주세요.
+핵심 키워드와 트렌드 위주로 작성해주세요.
+
+기사 목록:
+{titles_text}"""
+        }]
+    )
+    summary = message.content[0].text
+
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("INSERT INTO summaries (type, content, date) VALUES (?,?,?)",
+              (summary_type, summary, today))
+    conn.commit()
+    conn.close()
+
+    return summary
+
+# 자동 크롤링 스케줄러
+def run_crawler():
+    try:
+        from crawler import crawl
+        print(f"자동 크롤링 실행 - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        crawl()
+    except Exception as e:
+        print(f"크롤링 오류: {e}")
+
+def start_scheduler():
+    schedule.every(30).minutes.do(run_crawler)
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+
 @app.route("/")
 def index():
-    articles = get_articles()
-    return render_template("index.html", articles=articles)
+    articles      = get_articles()
+    today_summary = get_summary("today")
+    week_summary  = get_summary("week")
+    return render_template("index.html",
+        articles=articles,
+        today_summary=today_summary[0] if today_summary else None,
+        week_summary=week_summary[0] if week_summary else None,
+    )
+
+@app.route("/api/summary/<summary_type>")
+@limiter.limit("10 per hour")
+def api_summary(summary_type):
+    summary = generate_summary(summary_type)
+    return jsonify({"summary": summary})
 
 @app.route("/news/<category>")
 def news_category(category):
@@ -58,7 +178,13 @@ def news_category(category):
 def stock():
     return render_template("stock.html")
 
+@app.route("/realestate")
+def realestate():
+    articles = get_articles("부동산")
+    return render_template("realestate.html", articles=articles)
+
 @app.route("/feedback", methods=["GET", "POST"])
+@limiter.limit("10 per hour")
 def feedback():
     if request.method == "POST":
         name    = request.form.get("name", "익명")
@@ -67,7 +193,6 @@ def feedback():
         if message:
             conn = sqlite3.connect(DB)
             c = conn.cursor()
-            from datetime import datetime
             c.execute("INSERT INTO feedbacks (name, email, message, date) VALUES (?,?,?,?)",
                       (name, email, message, datetime.now().strftime("%Y-%m-%d %H:%M")))
             conn.commit()
@@ -76,6 +201,7 @@ def feedback():
     return render_template("feedback.html", success=False)
 
 @app.route("/api/market")
+@limiter.limit("30 per hour")
 def market_data():
     tickers = {
         "코스피": "^KS11",
@@ -93,13 +219,13 @@ def market_data():
             t = yf.Ticker(ticker)
             hist = t.history(period="2d")
             if len(hist) >= 2:
-                current = hist["Close"].iloc[-1]
-                previous = hist["Close"].iloc[-2]
-                change = current - previous
+                current    = hist["Close"].iloc[-1]
+                previous   = hist["Close"].iloc[-2]
+                change     = current - previous
                 change_pct = (change / previous) * 100
                 result[name] = {
-                    "price": round(current, 2),
-                    "change": round(change, 2),
+                    "price":      round(current, 2),
+                    "change":     round(change, 2),
                     "change_pct": round(change_pct, 2),
                 }
         except:
@@ -107,24 +233,31 @@ def market_data():
     return jsonify(result)
 
 @app.route("/api/stock/<ticker>")
+@limiter.limit("30 per hour")
 def stock_data(ticker):
     try:
-        t = yf.Ticker(ticker)
+        t    = yf.Ticker(ticker)
         hist = t.history(period="1mo")
         info = t.info
         prices = [round(p, 2) for p in hist["Close"].tolist()]
         dates  = [str(d.date()) for d in hist.index]
         return jsonify({
-            "name": info.get("longName", ticker),
-            "price": round(hist["Close"].iloc[-1], 2),
+            "name":     info.get("longName", ticker),
+            "price":    round(hist["Close"].iloc[-1], 2),
             "currency": info.get("currency", "USD"),
-            "prices": prices,
-            "dates": dates,
+            "prices":   prices,
+            "dates":    dates,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+# 서버 시작 시 초기화
 init_db()
+run_crawler()
+
+# 백그라운드 스케줄러 시작
+scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
+scheduler_thread.start()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

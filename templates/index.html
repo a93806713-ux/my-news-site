@@ -16,7 +16,6 @@
     nav a { color: #ccd; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
     nav a:hover, nav a.active { background: #4a6cf7; color: white; }
 
-    /* 시세 섹션 */
     .market-section { background: #1a1a2e; padding: 16px; }
     .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-width: 1000px; margin: 0 auto; }
     .market-card { background: #16213e; border-radius: 10px; padding: 12px; text-align: center; }
@@ -26,9 +25,17 @@
     .market-card .up   { color: #ff6b6b; }
     .market-card .down { color: #4ecdc4; }
 
-    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
 
-    .search-bar { display: flex; margin-bottom: 20px; gap: 8px; }
+    .summary-section { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .summary-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .summary-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-weight: 600; font-size: 14px; }
+    .refresh-btn { padding: 5px 12px; background: #4a6cf7; color: white; border: none; border-radius: 20px; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .refresh-btn:hover { background: #1a1a2e; }
+    .summary-body { font-size: 13px; line-height: 1.8; color: #444; white-space: pre-line; }
+    .empty-summary { color: #aaa; font-size: 13px; }
+
+    .search-bar { display: flex; margin-bottom: 16px; gap: 8px; }
     .search-bar input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; outline: none; }
     .search-bar input:focus { border-color: #1a1a2e; }
     .search-bar button { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; }
@@ -51,6 +58,9 @@
     .badge.주식    { background: #e8f0fe; color: #1a56db; }
     .badge.경제    { background: #fef3c7; color: #b45309; }
     .badge.부동산  { background: #d1fae5; color: #065f46; }
+    .badge.해외경제 { background: #ede9fe; color: #5b21b6; }
+
+    @media (max-width: 600px) { .summary-section { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -65,11 +75,11 @@
   <a href="/news/경제">경제</a>
   <a href="/news/주식">주식</a>
   <a href="/news/부동산">부동산</a>
+  <a href="/realestate">부동산 현황</a>
   <a href="/stock">주가 검색</a>
   <a href="/feedback">개선 요청</a>
 </nav>
 
-<!-- 실시간 시세 -->
 <div class="market-section">
   <div class="market-grid" id="marketGrid">
     <div class="market-card"><div class="name">로딩 중...</div></div>
@@ -77,17 +87,53 @@
 </div>
 
 <div class="container">
+
+  <!-- AI 요약 -->
+  <div class="summary-section">
+    <div class="summary-card">
+      <div class="summary-header">
+        <span>📅 저번주 주요 동향</span>
+        <button class="refresh-btn" onclick="loadSummary('week', this)">AI 요약</button>
+      </div>
+      <div class="summary-body" id="week-summary">
+        {% if week_summary %}
+          {{ week_summary }}
+        {% else %}
+          <span class="empty-summary">버튼을 눌러 AI 요약을 생성해보세요</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-header">
+        <span>📰 오늘의 주요 동향</span>
+        <button class="refresh-btn" onclick="loadSummary('today', this)">AI 요약</button>
+      </div>
+      <div class="summary-body" id="today-summary">
+        {% if today_summary %}
+          {{ today_summary }}
+        {% else %}
+          <span class="empty-summary">버튼을 눌러 AI 요약을 생성해보세요</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- 검색창 -->
   <div class="search-bar">
     <input type="text" id="searchInput" placeholder="기사 검색...">
     <button onclick="applyFilter()">검색</button>
   </div>
+
+  <!-- 카테고리 필터 -->
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="setCategory('전체')">전체</button>
-    <button class="filter-btn" onclick="setCategory('경제')">경제</button>
-    <button class="filter-btn" onclick="setCategory('주식')">주식</button>
-    <button class="filter-btn" onclick="setCategory('부동산')">부동산</button>
+    <button class="filter-btn active" onclick="setCategory('전체')">📋 전체</button>
+    <button class="filter-btn" onclick="setCategory('경제')">💹 경제</button>
+    <button class="filter-btn" onclick="setCategory('주식')">📈 주식</button>
+    <button class="filter-btn" onclick="setCategory('부동산')">🏢 부동산</button>
   </div>
+
   <div class="result-count" id="resultCount"></div>
+
   <div id="articleList">
     {% for article in articles %}
     <div class="article-card" data-category="{{ article['category'] }}">
@@ -101,6 +147,7 @@
     </div>
     {% endfor %}
   </div>
+
 </div>
 
 <script>
@@ -109,14 +156,14 @@ let currentCategory = '전체';
 function setCategory(cat) {
   currentCategory = cat;
   document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.textContent === cat);
+    btn.classList.toggle('active', btn.textContent.includes(cat));
   });
   applyFilter();
 }
 
 function applyFilter() {
   const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
-  const cards = document.querySelectorAll('.article-card');
+  const cards   = document.querySelectorAll('.article-card');
   let count = 0;
   cards.forEach(card => {
     const title    = card.querySelector('h3').textContent.toLowerCase();
@@ -133,7 +180,6 @@ document.getElementById('searchInput').addEventListener('keyup', e => {
   if (e.key === 'Enter') applyFilter();
 });
 
-// 시세 데이터 불러오기
 async function loadMarket() {
   const res  = await fetch('/api/market');
   const data = await res.json();
@@ -151,6 +197,18 @@ async function loadMarket() {
         <div class="change ${cls}">${arrow} ${sign}${info.change_pct}%</div>
       </div>`;
   }
+}
+
+async function loadSummary(type, btn) {
+  const el = document.getElementById(`${type}-summary`);
+  btn.textContent = '생성 중...';
+  btn.disabled = true;
+  el.textContent = 'AI가 기사를 분석하고 있어요... (10~20초 소요)';
+  const res  = await fetch(`/api/summary/${type}`);
+  const data = await res.json();
+  el.textContent = data.summary;
+  btn.textContent = '다시 생성';
+  btn.disabled = false;
 }
 
 loadMarket();

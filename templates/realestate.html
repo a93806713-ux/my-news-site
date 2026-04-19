@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>한국 부동산 현황 - 오늘의 경제 노트</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+    header { background: #1a1a2e; color: white; padding: 16px 0; text-align: center; }
+    header h1 { font-size: 24px; font-weight: 700; }
+    nav { background: #16213e; display: flex; justify-content: center; gap: 4px; padding: 8px; flex-wrap: wrap; }
+    nav a { color: #ccd; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
+    nav a:hover, nav a.active { background: #4a6cf7; color: white; }
+    .container { max-width: 1000px; margin: 0 auto; padding: 24px 16px 40px; }
+    h2 { font-size: 20px; margin-bottom: 6px; }
+    .subtitle { font-size: 13px; color: #888; margin-bottom: 24px; }
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .stat-card .label { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .stat-card .value { font-size: 24px; font-weight: 700; color: #1a1a2e; }
+    .stat-card .change { font-size: 12px; margin-top: 4px; }
+    .up   { color: #ff6b6b; }
+    .down { color: #4ecdc4; }
+    .chart-section { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 24px; }
+    .chart-section h3 { font-size: 16px; margin-bottom: 16px; color: #1a1a2e; }
+    .chart-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .chart-tab { padding: 6px 16px; border-radius: 20px; border: 1.5px solid #ddd; background: white; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
+    .chart-tab.active { background: #1a1a2e; color: white; border-color: #1a1a2e; }
+    .region-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 32px; }
+    .region-card { background: white; border-radius: 10px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); text-align: center; }
+    .region-card .region { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .region-card .price  { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+    .region-card .diff   { font-size: 12px; margin-top: 4px; }
+    .article-card { background: white; border-radius: 12px; padding: 16px 20px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: transform 0.15s; }
+    .article-card:hover { transform: translateY(-2px); }
+    .article-card h4 { font-size: 15px; margin-bottom: 6px; }
+    .article-card h4 a { color: #1a1a2e; text-decoration: none; }
+    .article-card h4 a:hover { color: #4a6cf7; }
+    .meta { font-size: 12px; color: #999; }
+    .section-title { font-size: 17px; font-weight: 600; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #1a1a2e; }
+  </style>
+</head>
+<body>
+
+<header><h1>📒 오늘의 경제 노트</h1></header>
+<nav>
+  <a href="/">홈</a>
+  <a href="/news/경제">경제</a>
+  <a href="/news/주식">주식</a>
+  <a href="/news/부동산">부동산</a>
+  <a href="/realestate" class="active">부동산 현황</a>
+  <a href="/stock">주가 검색</a>
+  <a href="/feedback">개선 요청</a>
+</nav>
+
+<div class="container">
+  <h2>🏢 한국 부동산 현황</h2>
+  <p class="subtitle">주요 지표 및 지역별 아파트 매매가 현황 (단위: 만원/㎡)</p>
+
+  <div class="stat-grid">
+    <div class="stat-card">
+      <div class="label">전국 아파트 매매지수</div>
+      <div class="value">98.2</div>
+      <div class="change down">▼ -0.3 (전월비)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">서울 아파트 매매지수</div>
+      <div class="value">102.1</div>
+      <div class="change up">▲ +0.5 (전월비)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">전국 전세지수</div>
+      <div class="value">96.8</div>
+      <div class="change down">▼ -0.2 (전월비)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">서울 평균 매매가</div>
+      <div class="value">12.4억</div>
+      <div class="change up">▲ +0.8% (전월비)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">전국 미분양 현황</div>
+      <div class="value">6.2만호</div>
+      <div class="change up">▲ +3.2% (전월비)</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">주택담보대출 금리</div>
+      <div class="value">3.85%</div>
+      <div class="change down">▼ -0.05%p</div>
+    </div>
+  </div>
+
+  <div class="chart-section">
+    <h3>📊 아파트 매매가 지수 추이</h3>
+    <div class="chart-tabs">
+      <button class="chart-tab active" onclick="changeChart('seoul', this)">서울</button>
+      <button class="chart-tab" onclick="changeChart('nationwide', this)">전국</button>
+      <button class="chart-tab" onclick="changeChart('jeonse', this)">전세</button>
+    </div>
+    <canvas id="priceChart" height="80"></canvas>
+  </div>
+
+  <div class="section-title">📍 지역별 아파트 평균 매매가 (만원/㎡)</div>
+  <div class="region-grid">
+    <div class="region-card"><div class="region">서울</div><div class="price">1,240만</div><div class="diff up">▲ +0.8%</div></div>
+    <div class="region-card"><div class="region">경기</div><div class="price">520만</div><div class="diff down">▼ -0.2%</div></div>
+    <div class="region-card"><div class="region">인천</div><div class="price">380만</div><div class="diff down">▼ -0.1%</div></div>
+    <div class="region-card"><div class="region">부산</div><div class="price">420만</div><div class="diff up">▲ +0.3%</div></div>
+    <div class="region-card"><div class="region">대구</div><div class="price">310만</div><div class="diff down">▼ -0.4%</div></div>
+    <div class="region-card"><div class="region">대전</div><div class="price">290만</div><div class="diff up">▲ +0.1%</div></div>
+    <div class="region-card"><div class="region">광주</div><div class="price">270만</div><div class="diff down">▼ -0.2%</div></div>
+    <div class="region-card"><div class="region">울산</div><div class="price">280만</div><div class="diff down">▼ -0.3%</div></div>
+    <div class="region-card"><div class="region">세종</div><div class="price">350만</div><div class="diff up">▲ +0.5%</div></div>
+    <div class="region-card"><div class="region">제주</div><div class="price">320만</div><div class="diff up">▲ +0.2%</div></div>
+  </div>
+
+  <div class="section-title">📰 최신 부동산 뉴스</div>
+  {% for article in articles %}
+  <div class="article-card">
+    <h4><a href="{{ article['link'] }}" target="_blank" rel="noreferrer">{{ article['title'] }}</a></h4>
+    <div class="meta">{{ article['source'] }} · {{ article['date'] }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+const chartData = {
+  seoul:      [98.1, 99.2, 100.1, 99.8, 100.5, 101.2, 101.8, 102.1],
+  nationwide: [99.2, 99.5, 99.8, 99.3, 98.9, 98.5, 98.3, 98.2],
+  jeonse:     [97.5, 97.8, 98.1, 97.9, 97.5, 97.1, 96.9, 96.8],
+};
+const labels = ['9월', '10월', '11월', '12월', '1월', '2월', '3월', '4월'];
+const colors = { seoul: '#4a6cf7', nationwide: '#1a1a2e', jeonse: '#f59e0b' };
+const names  = { seoul: '서울 매매', nationwide: '전국 매매', jeonse: '전국 전세' };
+
+let chart;
+
+window.onload = function() {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '서울 매매',
+        data: chartData.seoul,
+        borderColor: '#4a6cf7',
+        backgroundColor: 'rgba(74,108,247,0.08)',
+        borderWidth: 2.5,
+        pointRadius: 4,
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { min: 95, max: 105, ticks: { callback: v => v.toFixed(1) } }
+      }
+    }
+  });
+};
+
+function changeChart(type, btn) {
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  chart.data.datasets[0].data            = chartData[type];
+  chart.data.datasets[0].borderColor     = colors[type];
+  chart.data.datasets[0].backgroundColor = colors[type] + '15';
+  chart.data.datasets[0].label           = names[type];
+  chart.update();
+}
+</script>
+</body>
+</html>

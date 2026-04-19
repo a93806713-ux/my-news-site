@@ -7,14 +7,24 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB = os.path.join(BASE_DIR, "news.db")
 
 RSS_FEEDS = [
-    # 경제
-    {"url": "https://www.hankyung.com/feed/economy",       "source": "한국경제", "category": "경제"},
-    {"url": "https://feeds.feedburner.com/khan/rss/business", "source": "경향신문", "category": "경제"},
-    # 주식
-    {"url": "https://www.hankyung.com/feed/stock",         "source": "한국경제", "category": "주식"},
-    # 부동산
-    {"url": "https://www.hankyung.com/feed/realestate",    "source": "한국경제", "category": "부동산"},
-    {"url": "https://land.naver.com/news/newsRss.naver",   "source": "네이버부동산", "category": "부동산"},
+    # 국내 - 경제
+    {"url": "https://www.yonhapnewstv.co.kr/category/news/economy/feed/",     "source": "연합뉴스", "category": "경제"},
+    {"url": "https://www.hankyung.com/feed/economy",                           "source": "한국경제", "category": "경제"},
+    {"url": "https://www.mk.co.kr/rss/30100041/",                             "source": "매일경제", "category": "경제"},
+    {"url": "https://www.moneytoday.co.kr/rss/S1N1A1/",                       "source": "머니투데이", "category": "경제"},
+    {"url": "https://www.edaily.co.kr/rss/01400000.xml",                       "source": "이데일리", "category": "경제"},
+    # 국내 - 주식
+    {"url": "https://www.hankyung.com/feed/finance",                           "source": "한국경제", "category": "주식"},
+    {"url": "https://www.mk.co.kr/rss/30200030/",                             "source": "매일경제", "category": "주식"},
+    {"url": "https://www.moneytoday.co.kr/rss/S1N2A1/",                       "source": "머니투데이", "category": "주식"},
+    {"url": "https://www.edaily.co.kr/rss/01600000.xml",                       "source": "이데일리", "category": "주식"},
+    # 국내 - 부동산
+    {"url": "https://www.hankyung.com/feed/realestate",                        "source": "한국경제", "category": "부동산"},
+    {"url": "https://www.mk.co.kr/rss/30400011/",                             "source": "매일경제", "category": "부동산"},
+    # 해외 - 경제/주식
+    {"url": "https://feeds.reuters.com/reuters/businessNews",                  "source": "Reuters",  "category": "해외경제"},
+    {"url": "https://feeds.bloomberg.com/markets/news.rss",                    "source": "Bloomberg","category": "해외경제"},
+    {"url": "https://www.ft.com/rss/home/us",                                  "source": "FT",       "category": "해외경제"},
 ]
 
 def init_db():
