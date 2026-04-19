@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>주가 검색 - 오늘의 경제 노트</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+    header { background: #1a1a2e; color: white; padding: 16px 0; text-align: center; }
+    header h1 { font-size: 24px; font-weight: 700; }
+    nav { background: #16213e; display: flex; justify-content: center; gap: 4px; padding: 8px; flex-wrap: wrap; }
+    nav a { color: #ccd; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
+    nav a:hover, nav a.active { background: #4a6cf7; color: white; }
+    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+    h2 { font-size: 20px; margin-bottom: 8px; }
+    p.desc { font-size: 13px; color: #888; margin-bottom: 20px; }
+    .search-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+    .search-bar input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; outline: none; }
+    .search-bar input:focus { border-color: #1a1a2e; }
+    .search-bar button { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    .stock-info { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; }
+    .stock-info h3 { font-size: 20px; margin-bottom: 4px; }
+    .stock-info .price { font-size: 28px; font-weight: 700; color: #1a1a2e; }
+    .chart-wrap { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; }
+    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .ex-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd; background: white; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .ex-btn:hover { border-color: #1a1a2e; background: #1a1a2e; color: white; }
+    .error { color: #e53e3e; font-size: 14px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+<header><h1>📒 오늘의 경제 노트</h1></header>
+<nav>
+  <a href="/">홈</a>
+  <a href="/news/경제">경제</a>
+  <a href="/news/주식">주식</a>
+  <a href="/news/부동산">부동산</a>
+  <a href="/stock" class="active">주가 검색</a>
+  <a href="/feedback">개선 요청</a>
+</nav>
+<div class="container">
+  <h2>📈 주가 검색</h2>
+  <p class="desc">티커 심볼을 입력하세요. 국내주식: 005930.KS (삼성전자) / 해외주식: AAPL (애플)</p>
+  <div class="examples">
+    <button class="ex-btn" onclick="search('005930.KS')">삼성전자</button>
+    <button class="ex-btn" onclick="search('000660.KS')">SK하이닉스</button>
+    <button class="ex-btn" onclick="search('035420.KS')">NAVER</button>
+    <button class="ex-btn" onclick="search('AAPL')">애플</button>
+    <button class="ex-btn" onclick="search('NVDA')">엔비디아</button>
+    <button class="ex-btn" onclick="search('TSLA')">테슬라</button>
+    <button class="ex-btn" onclick="search('MSFT')">마이크로소프트</button>
+    <button class="ex-btn" onclick="search('GOOGL')">구글</button>
+  </div>
+  <div class="search-bar">
+    <input type="text" id="tickerInput" placeholder="예: 005930.KS 또는 AAPL">
+    <button onclick="search()">검색</button>
+  </div>
+  <div id="error" class="error"></div>
+  <div class="stock-info" id="stockInfo">
+    <h3 id="stockName"></h3>
+    <div class="price" id="stockPrice"></div>
+  </div>
+  <div class="chart-wrap" id="chartWrap">
+    <canvas id="stockChart"></canvas>
+  </div>
+</div>
+<script>
+let chartInstance = null;
+
+async function search(ticker) {
+  if (ticker) document.getElementById('tickerInput').value = ticker;
+  const t = document.getElementById('tickerInput').value.trim();
+  if (!t) return;
+  document.getElementById('error').textContent = '';
+  document.getElementById('stockInfo').style.display = 'none';
+  document.getElementById('chartWrap').style.display = 'none';
+
+  const res  = await fetch(`/api/stock/${t}`);
+  const data = await res.json();
+  if (data.error) {
+    document.getElementById('error').textContent = '종목을 찾을 수 없어요. 티커 심볼을 확인해주세요.';
+    return;
+  }
+  document.getElementById('stockName').textContent  = data.name;
+  document.getElementById('stockPrice').textContent = `${data.price.toLocaleString()} ${data.currency}`;
+  document.getElementById('stockInfo').style.display = 'block';
+  document.getElementById('chartWrap').style.display = 'block';
+
+  if (chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('stockChart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.dates,
+      datasets: [{
+        label: data.name,
+        data: data.prices,
+        borderColor: '#4a6cf7',
+        backgroundColor: 'rgba(74,108,247,0.08)',
+        borderWidth: 2,
+        pointRadius: 0,
+        tension: 0.3,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 6 } },
+        y: { ticks: { maxTicksLimit: 5 } }
+      }
+    }
+  });
+}
+
+document.getElementById('tickerInput').addEventListener('keyup', e => {
+  if (e.key === 'Enter') search();
+});
+</script>
+</body>
+</html>
