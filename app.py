@@ -114,7 +114,7 @@ def generate_summary(summary_type):
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     message = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-5",
         max_tokens=500,
         messages=[{
             "role": "user",
@@ -157,15 +157,15 @@ def start_scheduler():
 def auto_post_instagram():
     """매일 오전 9시 인스타 자동 포스팅"""
     try:
-        from instagram_poster import post_to_instagram, generate_caption
+        from instagram_poster import post_to_instagram, generate_caption, create_post_image, upload_to_imgbb
         import yfinance as yf
 
         # 시세 데이터 수집
         tickers = {
-            "코스피": "^KS11",
-            "나스닥": "^IXIC",
+            "코스피":   "^KS11",
+            "나스닥":   "^IXIC",
             "비트코인": "BTC-USD",
-            "환율": "KRW=X",
+            "환율":     "KRW=X",
         }
         market = {}
         for name, ticker in tickers.items():
@@ -177,21 +177,30 @@ def auto_post_instagram():
                     previous   = hist["Close"].iloc[-2]
                     change     = current - previous
                     change_pct = round((change / previous) * 100, 2)
-                    market[name] = {"price": round(current, 2), "change": change, "change_pct": change_pct}
+                    market[name] = {
+                        "price":      round(current, 2),
+                        "change":     change,
+                        "change_pct": change_pct
+                    }
             except:
                 pass
 
         # AI 요약 생성
         summary = generate_summary("today")
 
-        # 캡션 생성
+        # 이미지 생성 및 업로드
+        img       = create_post_image(summary, market)
+        image_url = upload_to_imgbb(img)
+
+        if not image_url:
+            print("이미지 업로드 실패로 포스팅 중단")
+            return
+
+        # 캡션 생성 및 포스팅
         caption = generate_caption(summary, market)
-
-        # 이미지는 외부 URL 필요 (임시로 기본 이미지 사용)
-        image_url = "https://via.placeholder.com/1080x1080/1a1a2e/ffffff?text=오늘의+경제+노트"
-
         post_to_instagram(image_url, caption)
         print("인스타 자동 포스팅 완료!")
+
     except Exception as e:
         print(f"인스타 포스팅 오류: {e}")
 
@@ -319,6 +328,11 @@ def admin():
         else:
             return render_template("admin.html", feedbacks=[], logged_in=False, error="비밀번호가 틀렸어요!")
     return render_template("admin.html", feedbacks=[], logged_in=False, error=None)
+
+@app.route("/api/test_instagram")
+def test_instagram():
+    auto_post_instagram()
+    return jsonify({"status": "포스팅 시도 완료! 터미널 확인하세요."})
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
