@@ -259,6 +259,24 @@ run_crawler()
 scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
 scheduler_thread.start()
 
+# 관리자 페이지
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "admin1234")
+
+@app.route("/admin", methods=["GET", "POST"])
+def admin():
+    if request.method == "POST":
+        password = request.form.get("password", "")
+        if password == ADMIN_PASSWORD:
+            conn = sqlite3.connect(DB)
+            c = conn.cursor()
+            feedbacks = c.execute("SELECT id, name, email, message, date FROM feedbacks ORDER BY date DESC").fetchall()
+            feedbacks = [{"id": r[0], "name": r[1], "email": r[2], "message": r[3], "date": r[4]} for r in feedbacks]
+            conn.close()
+            return render_template("admin.html", feedbacks=feedbacks, logged_in=True)
+        else:
+            return render_template("admin.html", feedbacks=[], logged_in=False, error="비밀번호가 틀렸어요!")
+    return render_template("admin.html", feedbacks=[], logged_in=False, error=None)
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port, debug=False)

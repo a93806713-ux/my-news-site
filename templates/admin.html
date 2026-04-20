@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 페이지 - 오늘의 경제 노트</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Apple SD Gothic Neo', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+    header { background: #1a1a2e; color: white; padding: 16px 0; text-align: center; }
+    header h1 { font-size: 24px; font-weight: 700; }
+    .container { max-width: 800px; margin: 40px auto; padding: 0 16px 40px; }
+
+    /* 로그인 폼 */
+    .login-card { background: white; border-radius: 12px; padding: 40px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); max-width: 400px; margin: 0 auto; }
+    .login-card h2 { font-size: 20px; margin-bottom: 24px; text-align: center; }
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    input[type=password] { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; outline: none; }
+    input[type=password]:focus { border-color: #1a1a2e; }
+    .btn { width: 100%; padding: 12px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 15px; cursor: pointer; font-family: inherit; margin-top: 8px; }
+    .btn:hover { background: #4a6cf7; }
+    .error { color: #e53e3e; font-size: 13px; margin-top: 8px; text-align: center; }
+
+    /* 피드백 목록 */
+    .page-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .page-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+    .feedback-card { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+    .feedback-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .feedback-name { font-weight: 600; font-size: 15px; }
+    .feedback-date { font-size: 12px; color: #999; }
+    .feedback-email { font-size: 12px; color: #4a6cf7; margin-bottom: 10px; }
+    .feedback-message { font-size: 14px; line-height: 1.7; color: #333; background: #f8f9fa; padding: 12px 16px; border-radius: 8px; }
+    .empty { text-align: center; padding: 60px 0; color: #aaa; font-size: 15px; }
+    .count-badge { display: inline-block; background: #4a6cf7; color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; margin-bottom: 20px; }
+    .back-btn { display: inline-block; margin-bottom: 20px; padding: 8px 20px; background: #f0f2f5; border-radius: 8px; text-decoration: none; color: #1a1a2e; font-size: 14px; }
+    .back-btn:hover { background: #ddd; }
+  </style>
+</head>
+<body>
+<header><h1>📒 오늘의 경제 노트</h1></header>
+
+<div class="container">
+  {% if not logged_in %}
+    <!-- 로그인 폼 -->
+    <div class="login-card">
+      <h2>🔐 관리자 로그인</h2>
+      <form method="POST">
+        <div class="form-group">
+          <label>비밀번호</label>
+          <input type="password" name="password" placeholder="관리자 비밀번호 입력" autofocus>
+        </div>
+        <button type="submit" class="btn">로그인</button>
+        {% if error %}
+          <p class="error">{{ error }}</p>
+        {% endif %}
+      </form>
+    </div>
+
+  {% else %}
+    <!-- 피드백 목록 -->
+    <a href="/" class="back-btn">← 홈으로</a>
+    <div class="page-title">💬 개선 요청 목록</div>
+    <p class="page-sub">사용자들이 남긴 개선 요청 및 의견이에요.</p>
+    <div class="count-badge">총 {{ feedbacks|length }}개</div>
+
+    {% if feedbacks %}
+      {% for f in feedbacks %}
+      <div class="feedback-card">
+        <div class="feedback-header">
+          <div class="feedback-name">{{ f.name }}</div>
+          <div class="feedback-date">{{ f.date }}</div>
+        </div>
+        {% if f.email %}
+          <div class="feedback-email">✉️ {{ f.email }}</div>
+        {% endif %}
+        <div class="feedback-message">{{ f.message }}</div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty">아직 접수된 개선 요청이 없어요.</div>
+    {% endif %}
+  {% endif %}
+</div>
+</body>
+</html>
