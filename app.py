@@ -147,10 +147,53 @@ def run_crawler():
         print(f"크롤링 오류: {e}")
 
 def start_scheduler():
-    schedule.every(30).minutes.do(run_crawler)
+    from crawler import crawl
+    schedule.every(30).minutes.do(crawl)
+    schedule.every().day.at("09:00").do(auto_post_instagram)
     while True:
         schedule.run_pending()
         time.sleep(60)
+
+def auto_post_instagram():
+    """매일 오전 9시 인스타 자동 포스팅"""
+    try:
+        from instagram_poster import post_to_instagram, generate_caption
+        import yfinance as yf
+
+        # 시세 데이터 수집
+        tickers = {
+            "코스피": "^KS11",
+            "나스닥": "^IXIC",
+            "비트코인": "BTC-USD",
+            "환율": "KRW=X",
+        }
+        market = {}
+        for name, ticker in tickers.items():
+            try:
+                t    = yf.Ticker(ticker)
+                hist = t.history(period="2d")
+                if len(hist) >= 2:
+                    current    = hist["Close"].iloc[-1]
+                    previous   = hist["Close"].iloc[-2]
+                    change     = current - previous
+                    change_pct = round((change / previous) * 100, 2)
+                    market[name] = {"price": round(current, 2), "change": change, "change_pct": change_pct}
+            except:
+                pass
+
+        # AI 요약 생성
+        summary = generate_summary("today")
+
+        # 캡션 생성
+        caption = generate_caption(summary, market)
+
+        # 이미지는 외부 URL 필요 (임시로 기본 이미지 사용)
+        image_url = "https://via.placeholder.com/1080x1080/1a1a2e/ffffff?text=오늘의+경제+노트"
+
+        post_to_instagram(image_url, caption)
+        print("인스타 자동 포스팅 완료!")
+    except Exception as e:
+        print(f"인스타 포스팅 오류: {e}")
 
 @app.route("/")
 def index():
