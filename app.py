@@ -256,20 +256,21 @@ def feedback():
 @limiter.limit("30 per hour")
 def market_data():
     tickers = {
-        "코스피": "^KS11",
-        "코스닥": "^KQ11",
-        "나스닥": "^IXIC",
-        "S&P500": "^GSPC",
-        "비트코인": "BTC-USD",
+        "코스피":      "^KS11",
+        "코스닥":      "^KQ11",
+        "나스닥":      "^IXIC",
+        "S&P500":      "^GSPC",
+        "비트코인":    "BTC-USD",
         "환율(원/달러)": "KRW=X",
-        "금": "GC=F",
-        "유가(WTI)": "CL=F",
+        "금":          "GC=F",
+        "유가(WTI)":   "CL=F",
     }
     result = {}
     for name, ticker in tickers.items():
         try:
-            t = yf.Ticker(ticker)
-            hist = t.history(period="2d")
+            t    = yf.Ticker(ticker)
+            hist = t.history(period="5d")  # 2d → 5d 로 변경 (주말/공휴일 대비)
+            hist = hist.dropna()            # NaN 제거
             if len(hist) >= 2:
                 current    = hist["Close"].iloc[-1]
                 previous   = hist["Close"].iloc[-2]
@@ -280,7 +281,15 @@ def market_data():
                     "change":     round(change, 2),
                     "change_pct": round(change_pct, 2),
                 }
-        except:
+            elif len(hist) == 1:
+                current = hist["Close"].iloc[-1]
+                result[name] = {
+                    "price":      round(current, 2),
+                    "change":     0,
+                    "change_pct": 0,
+                }
+        except Exception as e:
+            print(f"시세 오류 {name}: {e}")
             result[name] = {"price": 0, "change": 0, "change_pct": 0}
     return jsonify(result)
 
@@ -288,17 +297,41 @@ def market_data():
 @limiter.limit("30 per hour")
 def stock_data(ticker):
     try:
-        t    = yf.Ticker(ticker)
-        hist = t.history(period="1mo")
-        info = t.info
+        period = request.args.get("period", "1mo")
+        candle = request.args.get("candle", "daily")
+        t      = yf.Ticker(ticker)
+        info   = t.info
+
+        # 봉 타입에 따라 interval 설정
+        if candle == "weekly":
+            interval = "1wk"
+        elif candle == "monthly":
+            interval = "1mo"
+        else:
+            interval = "1d"
+
+        hist   = t.history(period=period, interval=interval)
         prices = [round(p, 2) for p in hist["Close"].tolist()]
         dates  = [str(d.date()) for d in hist.index]
+
+        # OHLC 데이터 (봉 그래프용)
+        ohlc = []
+        for i, row in hist.iterrows():
+            ohlc.append({
+                "date":  str(i.date()),
+                "open":  round(row["Open"], 2),
+                "high":  round(row["High"], 2),
+                "low":   round(row["Low"],  2),
+                "close": round(row["Close"],2),
+            })
+
         return jsonify({
             "name":     info.get("longName", ticker),
             "price":    round(hist["Close"].iloc[-1], 2),
             "currency": info.get("currency", "USD"),
             "prices":   prices,
             "dates":    dates,
+            "ohlc":     ohlc,
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 400
@@ -333,6 +366,40 @@ def admin():
 def test_instagram():
     auto_post_instagram()
     return jsonify({"status": "포스팅 시도 완료! 터미널 확인하세요."})
+
+@app.route("/api/search_ticker")
+@limiter.limit("30 per hour")
+def search_ticker():
+    query = request.args.get("q", "")
+    if not query:
+        return jsonify([])
+    try:
+        from deep_translator import GoogleTranslator
+
+        # 한글 포함 여부 확인 후 영어로 번역
+        def is_korean(text):
+            return any('\uac00' <= c <= '\ud7a3' for c in text)
+
+        search_query = query
+        if is_korean(query):
+            search_query = GoogleTranslator(source='ko', target='en').translate(query)
+            print(f"번역: {query} → {search_query}")
+
+        results = yf.Search(search_query, max_results=8)
+        data    = []
+        for q in results.quotes[:8]:
+            symbol = q.get("symbol", "")
+            name   = q.get("longname") or q.get("shortname", "")
+            if symbol and name:
+                data.append({
+                    "symbol":   symbol,
+                    "name":     name,
+                    "exchange": q.get("exchDisp", q.get("exchange", "")),
+                })
+        return jsonify(data)
+    except Exception as e:
+        print(f"검색 오류: {e}")
+        return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

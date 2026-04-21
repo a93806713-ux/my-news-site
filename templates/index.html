@@ -16,14 +16,16 @@
     nav a { color: #ccd; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
     nav a:hover, nav a.active { background: #4a6cf7; color: white; }
 
-    .market-section { background: #1a1a2e; padding: 16px; }
+    .market-section { background: #1a1a2e; padding: 16px 16px 8px; }
     .market-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; max-width: 1000px; margin: 0 auto; }
-    .market-card { background: #16213e; border-radius: 10px; padding: 12px; text-align: center; }
-    .market-card .name  { font-size: 11px; color: #aab; margin-bottom: 4px; }
-    .market-card .price { font-size: 16px; font-weight: 700; color: white; }
+    .market-card { background: #16213e; border-radius: 10px; padding: 12px; text-align: center; transition: transform 0.2s; }
+    .market-card:hover { transform: translateY(-2px); }
+    .market-card .name   { font-size: 11px; color: #aab; margin-bottom: 4px; }
+    .market-card .price  { font-size: 16px; font-weight: 700; color: white; }
     .market-card .change { font-size: 11px; margin-top: 2px; }
-    .market-card .up   { color: #ff6b6b; }
-    .market-card .down { color: #4ecdc4; }
+    .market-card .up     { color: #ff6b6b; }
+    .market-card .down   { color: #4ecdc4; }
+    .market-update { text-align: center; color: #5a6a8a; font-size: 11px; margin-top: 8px; padding-bottom: 8px; }
 
     .container { max-width: 860px; margin: 0 auto; padding: 24px 16px 40px; }
 
@@ -80,10 +82,12 @@
   <a href="/feedback">개선 요청</a>
 </nav>
 
+<!-- 실시간 시세 -->
 <div class="market-section">
   <div class="market-grid" id="marketGrid">
     <div class="market-card"><div class="name">로딩 중...</div></div>
   </div>
+  <div class="market-update" id="market-update-time"></div>
 </div>
 
 <div class="container">
@@ -152,6 +156,7 @@
 
 <script>
 let currentCategory = '전체';
+let prevPrices = {};
 
 function setCategory(cat) {
   currentCategory = cat;
@@ -181,38 +186,59 @@ document.getElementById('searchInput').addEventListener('keyup', e => {
 });
 
 async function loadMarket() {
-  const res  = await fetch('/api/market');
-  const data = await res.json();
-  const grid = document.getElementById('marketGrid');
-  grid.innerHTML = '';
-  for (const [name, info] of Object.entries(data)) {
-    const isUp  = info.change >= 0;
-    const sign  = isUp ? '+' : '';
-    const cls   = isUp ? 'up' : 'down';
-    const arrow = isUp ? '▲' : '▼';
-    grid.innerHTML += `
-      <div class="market-card">
-        <div class="name">${name}</div>
-        <div class="price">${info.price.toLocaleString()}</div>
-        <div class="change ${cls}">${arrow} ${sign}${info.change_pct}%</div>
-      </div>`;
+  try {
+    const res  = await fetch('/api/market');
+    const data = await res.json();
+    const grid = document.getElementById('marketGrid');
+    grid.innerHTML = '';
+
+    for (const [name, info] of Object.entries(data)) {
+      const isUp   = info.change >= 0;
+      const sign   = isUp ? '+' : '';
+      const cls    = isUp ? 'up' : 'down';
+      const arrow  = isUp ? '▲' : '▼';
+
+      // 가격 변동 애니메이션
+      const prev    = prevPrices[name];
+      const changed = prev !== undefined && prev !== info.price;
+      const flash   = changed ? (info.price > prev ? 'flash-up' : 'flash-down') : '';
+      prevPrices[name] = info.price;
+
+      grid.innerHTML += `
+        <div class="market-card ${flash}">
+          <div class="name">${name}</div>
+          <div class="price">${info.price.toLocaleString()}</div>
+          <div class="change ${cls}">${arrow} ${sign}${info.change_pct}%</div>
+        </div>`;
+    }
+
+    // 업데이트 시간
+    const now     = new Date();
+    const timeStr = now.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+    document.getElementById('market-update-time').textContent = `마지막 업데이트: ${timeStr} (15분 지연)`;
+  } catch(e) {
+    console.log('시세 로딩 실패:', e);
   }
 }
 
 async function loadSummary(type, btn) {
   const el = document.getElementById(`${type}-summary`);
   btn.textContent = '생성 중...';
-  btn.disabled = true;
-  el.textContent = 'AI가 기사를 분석하고 있어요... (10~20초 소요)';
+  btn.disabled    = true;
+  el.textContent  = 'AI가 기사를 분석하고 있어요... (10~20초 소요)';
   const res  = await fetch(`/api/summary/${type}`);
   const data = await res.json();
-  el.textContent = data.summary;
+  el.textContent  = data.summary;
   btn.textContent = '다시 생성';
-  btn.disabled = false;
+  btn.disabled    = false;
 }
 
+// 초기 로딩
 loadMarket();
 applyFilter();
+
+// 5초마다 시세 갱신
+setInterval(loadMarket, 5000);
 </script>
 </body>
 </html>

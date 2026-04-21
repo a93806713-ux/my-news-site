@@ -13,20 +13,50 @@
     nav { background: #16213e; display: flex; justify-content: center; gap: 4px; padding: 8px; flex-wrap: wrap; }
     nav a { color: #ccd; text-decoration: none; padding: 6px 16px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
     nav a:hover, nav a.active { background: #4a6cf7; color: white; }
-    .container { max-width: 860px; margin: 0 auto; padding: 24px 16px; }
+    .container { max-width: 900px; margin: 0 auto; padding: 24px 16px 40px; }
     h2 { font-size: 20px; margin-bottom: 8px; }
-    p.desc { font-size: 13px; color: #888; margin-bottom: 20px; }
-    .search-bar { display: flex; gap: 8px; margin-bottom: 20px; }
+
+    /* 검색창 */
+    .search-wrap { position: relative; margin-bottom: 20px; }
+    .search-bar { display: flex; gap: 8px; }
     .search-bar input { flex: 1; padding: 10px 16px; border-radius: 8px; border: 1.5px solid #ddd; font-size: 14px; font-family: inherit; outline: none; }
     .search-bar input:focus { border-color: #1a1a2e; }
-    .search-bar button { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; }
-    .stock-info { background: white; border-radius: 12px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; }
-    .stock-info h3 { font-size: 20px; margin-bottom: 4px; }
-    .stock-info .price { font-size: 28px; font-weight: 700; color: #1a1a2e; }
-    .chart-wrap { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; }
-    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-    .ex-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd; background: white; font-size: 12px; cursor: pointer; font-family: inherit; }
+    .search-bar button { padding: 10px 20px; background: #1a1a2e; color: white; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; font-family: inherit; }
+
+    /* 자동완성 드롭다운 */
+    .autocomplete { position: absolute; top: 100%; left: 0; right: 60px; background: white; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); z-index: 100; display: none; margin-top: 4px; }
+    .autocomplete-item { padding: 10px 16px; cursor: pointer; border-bottom: 1px solid #f0f2f5; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .autocomplete-item:last-child { border-bottom: none; }
+    .autocomplete-item:hover { background: #f0f2f5; }
+    .autocomplete-item .ac-name { font-weight: 600; color: #1a1a2e; }
+    .autocomplete-item .ac-symbol { font-size: 12px; color: #888; background: #f0f2f5; padding: 2px 8px; border-radius: 10px; }
+
+    /* 예시 버튼 */
+    .examples { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .ex-btn { padding: 6px 14px; border-radius: 20px; border: 1.5px solid #ddd; background: white; font-size: 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; }
     .ex-btn:hover { border-color: #1a1a2e; background: #1a1a2e; color: white; }
+
+    /* 종목 정보 */
+    .stock-info { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; }
+    .stock-info-top { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px; }
+    .stock-info h3 { font-size: 20px; margin-bottom: 4px; }
+    .stock-symbol { font-size: 13px; color: #888; margin-bottom: 8px; }
+    .stock-price { font-size: 32px; font-weight: 700; color: #1a1a2e; }
+    .stock-change { font-size: 15px; margin-top: 4px; }
+    .stock-change.up   { color: #ff6b6b; }
+    .stock-change.down { color: #4ecdc4; }
+
+    /* 차트 컨트롤 */
+    .chart-controls { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .ctrl-group { display: flex; gap: 4px; background: #f0f2f5; border-radius: 8px; padding: 4px; }
+    .ctrl-btn { padding: 6px 14px; border-radius: 6px; border: none; background: transparent; font-size: 13px; cursor: pointer; font-family: inherit; color: #666; transition: all 0.2s; }
+    .ctrl-btn.active { background: white; color: #1a1a2e; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .ctrl-divider { width: 1px; background: #ddd; margin: 0 4px; }
+
+    /* 차트 */
+    .chart-wrap { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: none; position: relative; min-height: 300px; }
+    .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.8); border-radius: 12px; font-size: 14px; color: #888; display: none; }
+
     .error { color: #e53e3e; font-size: 14px; margin-top: 8px; }
   </style>
 </head>
@@ -41,54 +71,256 @@
   <a href="/stock" class="active">주가 검색</a>
   <a href="/feedback">개선 요청</a>
 </nav>
+
 <div class="container">
   <h2>📈 주가 검색</h2>
-  <p class="desc">티커 심볼을 입력하세요. 국내주식: 005930.KS (삼성전자) / 해외주식: AAPL (애플)</p>
+
+  <!-- 예시 버튼 -->
   <div class="examples">
-    <button class="ex-btn" onclick="search('005930.KS')">삼성전자</button>
-    <button class="ex-btn" onclick="search('000660.KS')">SK하이닉스</button>
-    <button class="ex-btn" onclick="search('035420.KS')">NAVER</button>
-    <button class="ex-btn" onclick="search('AAPL')">애플</button>
-    <button class="ex-btn" onclick="search('NVDA')">엔비디아</button>
-    <button class="ex-btn" onclick="search('TSLA')">테슬라</button>
-    <button class="ex-btn" onclick="search('MSFT')">마이크로소프트</button>
-    <button class="ex-btn" onclick="search('GOOGL')">구글</button>
+    <button class="ex-btn" onclick="searchByTicker('005930.KS', '삼성전자')">삼성전자</button>
+    <button class="ex-btn" onclick="searchByTicker('000660.KS', 'SK하이닉스')">SK하이닉스</button>
+    <button class="ex-btn" onclick="searchByTicker('035420.KS', 'NAVER')">NAVER</button>
+    <button class="ex-btn" onclick="searchByTicker('AAPL', '애플')">애플</button>
+    <button class="ex-btn" onclick="searchByTicker('NVDA', '엔비디아')">엔비디아</button>
+    <button class="ex-btn" onclick="searchByTicker('TSLA', '테슬라')">테슬라</button>
+    <button class="ex-btn" onclick="searchByTicker('MSFT', '마이크로소프트')">마이크로소프트</button>
+    <button class="ex-btn" onclick="searchByTicker('GOOGL', '구글')">구글</button>
+    <button class="ex-btn" onclick="searchByTicker('RKLB', '로켓랩')">로켓랩</button>
   </div>
-  <div class="search-bar">
-    <input type="text" id="tickerInput" placeholder="예: 005930.KS 또는 AAPL">
-    <button onclick="search()">검색</button>
+
+  <!-- 검색창 -->
+  <div class="search-wrap">
+    <div class="search-bar">
+      <input type="text" id="tickerInput" placeholder="회사명 또는 티커 입력 (예: 삼성전자, 애플, AAPL, Rocket Lab)">
+      <button onclick="searchInput()">검색</button>
+    </div>
+    <div class="autocomplete" id="autocomplete"></div>
   </div>
+
   <div id="error" class="error"></div>
+
+  <!-- 종목 정보 -->
   <div class="stock-info" id="stockInfo">
-    <h3 id="stockName"></h3>
-    <div class="price" id="stockPrice"></div>
+    <div class="stock-info-top">
+      <div>
+        <h3 id="stockName"></h3>
+        <div class="stock-symbol" id="stockSymbol"></div>
+        <div class="stock-price" id="stockPrice"></div>
+        <div class="stock-change" id="stockChange"></div>
+      </div>
+    </div>
   </div>
+
+  <!-- 차트 컨트롤 -->
+  <div class="chart-controls" id="chartControls" style="display:none">
+    <!-- 차트 타입 -->
+    <div class="ctrl-group">
+      <button class="ctrl-btn active" id="btn-line" onclick="setChartType('line')">선</button>
+      <button class="ctrl-btn" id="btn-candle" onclick="setChartType('candle')">봉</button>
+    </div>
+
+    <div class="ctrl-divider"></div>
+
+    <!-- 기간 -->
+    <div class="ctrl-group" id="periodGroup">
+      <button class="ctrl-btn active" id="btn-1mo" onclick="setPeriod('1mo')">1개월</button>
+      <button class="ctrl-btn" id="btn-3mo" onclick="setPeriod('3mo')">3개월</button>
+      <button class="ctrl-btn" id="btn-6mo" onclick="setPeriod('6mo')">6개월</button>
+      <button class="ctrl-btn" id="btn-1y"  onclick="setPeriod('1y')">1년</button>
+    </div>
+
+    <!-- 봉 타입 (봉 그래프 선택 시에만 표시) -->
+    <div class="ctrl-group" id="candleGroup" style="display:none">
+      <button class="ctrl-btn active" id="btn-daily"   onclick="setCandleType('daily')">일봉</button>
+      <button class="ctrl-btn"        id="btn-weekly"  onclick="setCandleType('weekly')">주봉</button>
+      <button class="ctrl-btn"        id="btn-monthly" onclick="setCandleType('monthly')">월봉</button>
+    </div>
+  </div>
+
+  <!-- 차트 -->
   <div class="chart-wrap" id="chartWrap">
     <canvas id="stockChart"></canvas>
+    <div class="loading-overlay" id="loadingOverlay">데이터 로딩 중...</div>
   </div>
 </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script>
 let chartInstance = null;
+let currentTicker = '';
+let currentChartType = 'line';
+let currentPeriod    = '1mo';
+let currentCandle    = 'daily';
+let searchTimeout    = null;
 
-async function search(ticker) {
-  if (ticker) document.getElementById('tickerInput').value = ticker;
-  const t = document.getElementById('tickerInput').value.trim();
-  if (!t) return;
-  document.getElementById('error').textContent = '';
-  document.getElementById('stockInfo').style.display = 'none';
-  document.getElementById('chartWrap').style.display = 'none';
+// 예시 버튼 클릭
+async function searchByTicker(ticker, name) {
+  document.getElementById('tickerInput').value = name;
+  currentTicker = ticker;
+  await loadStockData(ticker);
+}
 
-  const res  = await fetch(`/api/stock/${t}`);
-  const data = await res.json();
-  if (data.error) {
-    document.getElementById('error').textContent = '종목을 찾을 수 없어요. 티커 심볼을 확인해주세요.';
+// 검색창 입력
+async function searchInput() {
+  const q = document.getElementById('tickerInput').value.trim();
+  if (!q) return;
+  document.getElementById('autocomplete').style.display = 'none';
+
+  // 티커처럼 생겼으면 바로 검색
+  if (/^[A-Z0-9.\-]+$/.test(q) && q.length <= 10) {
+    currentTicker = q;
+    await loadStockData(q);
+  } else {
+    // 회사명으로 검색
+    await searchByName(q);
+  }
+}
+
+// 회사명으로 티커 검색
+async function searchByName(query) {
+  try {
+    const res  = await fetch(`/api/search_ticker?q=${encodeURIComponent(query)}`);
+    const data = await res.json();
+    if (data.error || data.length === 0) {
+      document.getElementById('error').textContent = '종목을 찾을 수 없어요. 다른 이름으로 검색해보세요.';
+      return;
+    }
+    if (data.length === 1) {
+      currentTicker = data[0].symbol;
+      await loadStockData(data[0].symbol);
+    } else {
+      showAutocomplete(data);
+    }
+  } catch(e) {
+    document.getElementById('error').textContent = '검색 중 오류가 발생했어요.';
+  }
+}
+
+// 자동완성 표시
+function showAutocomplete(results) {
+  const ac = document.getElementById('autocomplete');
+  ac.innerHTML = '';
+  results.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'autocomplete-item';
+    item.innerHTML = `<span class="ac-name">${r.name || r.symbol}</span><span class="ac-symbol">${r.symbol} · ${r.exchange}</span>`;
+    item.onclick = async () => {
+      document.getElementById('tickerInput').value = r.name || r.symbol;
+      ac.style.display = 'none';
+      currentTicker = r.symbol;
+      await loadStockData(r.symbol);
+    };
+    ac.appendChild(item);
+  });
+  ac.style.display = 'block';
+}
+
+// 입력 시 자동완성
+document.getElementById('tickerInput').addEventListener('input', (e) => {
+  clearTimeout(searchTimeout);
+  const q = e.target.value.trim();
+  if (q.length < 2) {
+    document.getElementById('autocomplete').style.display = 'none';
     return;
   }
-  document.getElementById('stockName').textContent  = data.name;
-  document.getElementById('stockPrice').textContent = `${data.price.toLocaleString()} ${data.currency}`;
-  document.getElementById('stockInfo').style.display = 'block';
+  searchTimeout = setTimeout(async () => {
+    try {
+      const res  = await fetch(`/api/search_ticker?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (data.length > 0) showAutocomplete(data);
+    } catch(e) {}
+  }, 400);
+});
+
+document.getElementById('tickerInput').addEventListener('keyup', e => {
+  if (e.key === 'Enter') searchInput();
+  if (e.key === 'Escape') document.getElementById('autocomplete').style.display = 'none';
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-wrap')) {
+    document.getElementById('autocomplete').style.display = 'none';
+  }
+});
+
+// 차트 타입 변경
+function setChartType(type) {
+  currentChartType = type;
+  document.getElementById('btn-line').classList.toggle('active', type === 'line');
+  document.getElementById('btn-candle').classList.toggle('active', type === 'candle');
+  document.getElementById('candleGroup').style.display = type === 'candle' ? 'flex' : 'none';
+  if (currentTicker) loadStockData(currentTicker);
+}
+
+// 기간 변경
+function setPeriod(period) {
+  currentPeriod = period;
+  ['1mo','3mo','6mo','1y'].forEach(p => {
+    document.getElementById(`btn-${p}`).classList.toggle('active', p === period);
+  });
+  if (currentTicker) loadStockData(currentTicker);
+}
+
+// 봉 타입 변경
+function setCandleType(type) {
+  currentCandle = type;
+  ['daily','weekly','monthly'].forEach(t => {
+    document.getElementById(`btn-${t}`).classList.toggle('active', t === type);
+  });
+  if (currentTicker) loadStockData(currentTicker);
+}
+
+// 주가 데이터 로드
+async function loadStockData(ticker) {
+  document.getElementById('error').textContent = '';
+  document.getElementById('loadingOverlay').style.display = 'flex';
   document.getElementById('chartWrap').style.display = 'block';
 
+  try {
+    const res  = await fetch(`/api/stock/${ticker}?period=${currentPeriod}&candle=${currentCandle}`);
+    const data = await res.json();
+
+    if (data.error) {
+      document.getElementById('error').textContent = '종목을 찾을 수 없어요.';
+      document.getElementById('chartWrap').style.display = 'none';
+      document.getElementById('loadingOverlay').style.display = 'none';
+      return;
+    }
+
+    // 종목 정보
+    document.getElementById('stockName').textContent   = data.name;
+    document.getElementById('stockSymbol').textContent = ticker;
+    document.getElementById('stockPrice').textContent  = `${data.price.toLocaleString()} ${data.currency}`;
+    document.getElementById('stockInfo').style.display = 'block';
+    document.getElementById('chartControls').style.display = 'flex';
+
+    // 변동률
+    if (data.prices && data.prices.length >= 2) {
+      const first  = data.prices[0];
+      const last   = data.prices[data.prices.length - 1];
+      const change = ((last - first) / first * 100).toFixed(2);
+      const el     = document.getElementById('stockChange');
+      el.textContent  = `${change >= 0 ? '▲' : '▼'} ${Math.abs(change)}% (기간 대비)`;
+      el.className    = `stock-change ${change >= 0 ? 'up' : 'down'}`;
+    }
+
+    // 차트 그리기
+    if (currentChartType === 'line') {
+      drawLineChart(data);
+    } else {
+      drawCandleChart(data);
+    }
+
+    document.getElementById('loadingOverlay').style.display = 'none';
+
+  } catch(e) {
+    document.getElementById('error').textContent = '데이터를 불러오는 중 오류가 발생했어요.';
+    document.getElementById('loadingOverlay').style.display = 'none';
+  }
+}
+
+// 선 그래프
+function drawLineChart(data) {
   if (chartInstance) chartInstance.destroy();
   const ctx = document.getElementById('stockChart').getContext('2d');
   chartInstance = new Chart(ctx, {
@@ -97,7 +329,7 @@ async function search(ticker) {
       labels: data.dates,
       datasets: [{
         label: data.name,
-        data: data.prices,
+        data:  data.prices,
         borderColor: '#4a6cf7',
         backgroundColor: 'rgba(74,108,247,0.08)',
         borderWidth: 2,
@@ -117,9 +349,52 @@ async function search(ticker) {
   });
 }
 
-document.getElementById('tickerInput').addEventListener('keyup', e => {
-  if (e.key === 'Enter') search();
-});
+// 봉 그래프
+function drawCandleChart(data) {
+  if (chartInstance) chartInstance.destroy();
+  const ctx = document.getElementById('stockChart').getContext('2d');
+
+  const ohlc   = data.ohlc || [];
+  const labels = ohlc.map(d => d.date);
+  const opens  = ohlc.map(d => d.open);
+  const highs  = ohlc.map(d => d.high);
+  const lows   = ohlc.map(d => d.low);
+  const closes = ohlc.map(d => d.close);
+  const colors = ohlc.map(d => d.close >= d.open ? 'rgba(255,107,107,0.8)' : 'rgba(78,205,196,0.8)');
+
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: '고가-저가',
+          data: ohlc.map(d => [d.low, d.high]),
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1,
+          barPercentage: 0.15,
+        },
+        {
+          label: '시가-종가',
+          data: ohlc.map(d => [d.open, d.close]),
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 1,
+          barPercentage: 0.6,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { maxTicksLimit: 8 } },
+        y: { ticks: { maxTicksLimit: 5 } }
+      }
+    }
+  });
+}
 </script>
 </body>
 </html>
