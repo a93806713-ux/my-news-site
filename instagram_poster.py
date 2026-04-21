@@ -177,8 +177,8 @@ def post_to_instagram(image_url, caption):
     container_id = result["id"]
     print(f"미디어 컨테이너 생성 완료: {container_id}")
 
-    print("미디어 처리 대기 중... (30초)")
-    time.sleep(30)
+    print("미디어 처리 대기 중... (15초)")
+    time.sleep(15)
 
     status_res = requests.get(
         f"https://graph.instagram.com/v18.0/{container_id}",

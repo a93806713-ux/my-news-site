@@ -364,8 +364,9 @@ def admin():
 
 @app.route("/api/test_instagram")
 def test_instagram():
-    auto_post_instagram()
-    return jsonify({"status": "포스팅 시도 완료! 터미널 확인하세요."})
+    t = threading.Thread(target=auto_post_instagram, daemon=True)
+    t.start()
+    return jsonify({"status": "포스팅 백그라운드 시작! 30초 후 인스타 확인하세요."})
 
 @app.route("/api/search_ticker")
 @limiter.limit("30 per hour")
